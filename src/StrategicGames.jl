@@ -1121,33 +1121,7 @@ function nash_se(payoff; allow_mixed=true, max_samples=1, isolated_eq_only=true,
         # https://discourse.julialang.org/t/programming-pattern-for-when-you-want-thread-race/97457
         
         
-        if max_samples == 1 && mt # multithreaded first find the treasure race....
-            eqs_ssize = Array{NamedTuple{(:equilibrium_strategies, :expected_payoffs, :supports), Tuple{Vector{Vector{Float64}}, Vector{Float64},Vector{Vector{Int64}}}}}(undef,nSupportsToTest)
-            eqs_ssize_mask = fill(false, nSupportsToTest)
-            idxs_supports  = reshape([idx for idx in CartesianIndices((length.(D)...,))],nSupportsToTest)
-            lk = ReentrantLock()
-            found = true
-            Threads.@threads for i in 1:length(idxs_supports)
-                idx = idxs_supports[i]
-                #println(idx)
-                S = [collect(D[n])[idx[n]] for n in 1:nPlayers]
-                eq = eq_on_support(payoff,S,domrem_strict=domrem_strict,domrem_mixedactions=domrem_mixedactions, domrem_tol=domrem_tol,domrem_solver=domrem_solver,verbosity=verbosity)
-                #println(eq)
-                if !isnothing(eq)
-                    eqs_ssize[i] = eq
-                    eqs_ssize_mask[i] = true
-                    lock(lk) do 
-                        found = true
-                    end
-                end
-                if !found
-                    break
-                end
-            end
-            if any(eqs_ssize_mask) # could well noone if found on this support size and we need to look for another one...
-                return eqs_ssize[eqs_ssize_mask]
-            end      
-        elseif (!mt) || eq_still_to_find < nSupportsToTest # we go sequencing single trheading...
+        if (!mt) || eq_still_to_find < nSupportsToTest # we go sequencing single trheading...
             for idx in CartesianIndices((length.(D)...,))
                 #println(idx)
                 S = [collect(D[n])[idx[n]] for n in 1:nPlayers]
